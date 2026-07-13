@@ -1,0 +1,114 @@
+TRACKING STATS:
+this is a VERY messy compilation of results from training. this is a work in progress and will be cleaned up later. just storing here for now so i don't lose it.
+
+7/5/26 - character-level transformer based on Attention is All You Need paper
+batch_size = 64
+block_size = 256
+max_iters = 5000
+eval_interval = 500
+learning_rate = 3e-4
+eval_iters = 200
+n_embd = 384
+n_head = 6
+n_layer = 6
+dropout = 0.2
+
+using MPS
+step 0: train loss 4.2849, val loss 4.2823
+step 500: train loss 2.0063, val loss 2.0917
+step 1000: train loss 1.5971, val loss 1.7750
+step 1500: train loss 1.4393, val loss 1.6402
+step 2000: train loss 1.3408, val loss 1.5703
+step 2500: train loss 1.2791, val loss 1.5276
+step 3000: train loss 1.2268, val loss 1.5059
+step 3500: train loss 1.1818, val loss 1.4882
+step 4000: train loss 1.1448, val loss 1.4836
+step 4500: train loss 1.1069, val loss 1.4698
+step 4999: train loss 1.0764, val loss 1.4882
+
+Nurse:
+Are gotes of less? no, gentlemen are done tales.
+
+BRAKENBURY:
+My Lord of Surrey, there the jocustice.
+
+JOHN OF GART:
+Uncle, shall in this be plain alon.
+
+ROMEO:
+Thinks Angelo; for the bless have sta'd by the old;
+Therefore steop thou that slew'st are thesend heolds
+To doubtle of the golden prince? Sup,
+Your nurpily ended on this a youth,
+The loving suisteres of tremble.
+
+MERCUTIO:
+So stay, O, his rever sis advantage an enjoy!
+Stabbeth! Was sleep, how smile, we'll quive a patticock:
+is nob
+"""
+
+7/12/26 - implemented BPE tokenization
+hyperparameters: NOTE that it does 500 iters as opposed to previous run's 5000
+merge_count = 500
+batch_size = 64
+block_size = 256
+max_iters = 500
+eval_interval = 500
+learning_rate = 3e-4
+eval_iters = 200
+n_embd = 384
+n_head = 6
+n_layer = 6
+dropout = 0.2
+
+step 0: train loss 6.7820, val loss 6.7778
+step 499: train loss 3.5295, val loss 3.7677
+mand darent: spes, I shid
+I trum you had but marler thank att, ortre have am:
+For trivourtagen farsied so? Sident?
+
+Nurse:
+HA throws out?
+
+DUKE OF gentlempon.
+
+ABELLADoca, cous live:
+Ty.
+CLARCUS:
+You be so hast though
+Thou both sushurchman:
+Or srumerhed with my honour of her, if but to How
+
+But when
+Secondervedd spople, on him go, womesbut for me?
+
+My dunder I had, me what I will be comfter hid's all what'ss whosedd.
+
+
+DUKE VINCENTIO:
+CLORK:
+This serving
+Fides are to do no more:
+Tourish'd to thy do Aa thou do yours, me; but anger and left be soest.
+To tell our brother to me holdizs are but thou remminter would not.
+But
+Here he pech or ere wemense,
+'
+
+
+First where Aufectsoe! let all the could bidstrain
+What is a many say I dost my good then to her Lan with
+And I'll hears: and I can doer than Aumour gentleman:
+Far him.
+Where takes,
+KING How he can proc� him.
+Tit my fairtunect whWhild him for the winict upon this prince.
+
+LUCIO:
+Wurn either: even yie devilent:
+
+The Lady for this uly: I thou res, my menantonn pekeside-gentle logood pity.
+And both beho wise, here I needver look,Cous incentering him plaction.
+
+This is a cad

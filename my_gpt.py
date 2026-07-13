@@ -5,7 +5,7 @@ from torch.nn import functional as F
 # hyperparameters
 batch_size = 64 # how many independent sequences will we process in parallel?
 block_size = 256 # what is the maximum context length for predictions?
-max_iters = 5000
+max_iters = 500
 eval_interval = 500
 learning_rate = 3e-4
 if torch.backends.mps.is_available():
@@ -32,16 +32,18 @@ text = urllib.request.urlopen(
     context=ctx
 ).read().decode('utf-8')
 
-# here are all the unique characters that occur in this text
-chars = sorted(list(set(text)))
-vocab_size = len(chars)
-# create a mapping from characters to integers
-stoi = { ch:i for i,ch in enumerate(chars) }
-itos = { i:ch for i,ch in enumerate(chars) }
-encode = lambda s: [stoi[c] for c in s] # encoder: take a string, output a list of integers
-decode = lambda l: ''.join([itos[i] for i in l]) # decoder: take a list of integers, output a string
+# BPE tokenizer
+from bpe_tokenizer import load_tokenizer, encoder, decoder
+merges, vocab = load_tokenizer("tokenizer.json")
+vocab_size = 256 + len(merges)
 
-# Train and test splits
+def encode(s):
+    return [tok for row in encoder(s) for tok in row]
+
+def decode(l):
+    return decoder([l])
+
+# train and test splits
 data = torch.tensor(encode(text), dtype=torch.long)
 n = int(0.9*len(data)) # first 90% will be train, rest val
 train_data = data[:n]
@@ -221,40 +223,3 @@ print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
 
 
 
-"""
-output for documentation purposes:
-
-using MPS
-step 0: train loss 4.2849, val loss 4.2823
-step 500: train loss 2.0063, val loss 2.0917
-step 1000: train loss 1.5971, val loss 1.7750
-step 1500: train loss 1.4393, val loss 1.6402
-step 2000: train loss 1.3408, val loss 1.5703
-step 2500: train loss 1.2791, val loss 1.5276
-step 3000: train loss 1.2268, val loss 1.5059
-step 3500: train loss 1.1818, val loss 1.4882
-step 4000: train loss 1.1448, val loss 1.4836
-step 4500: train loss 1.1069, val loss 1.4698
-step 4999: train loss 1.0764, val loss 1.4882
-
-Nurse:
-Are gotes of less? no, gentlemen are done tales.
-
-BRAKENBURY:
-My Lord of Surrey, there the jocustice.
-
-JOHN OF GART:
-Uncle, shall in this be plain alon.
-
-ROMEO:
-Thinks Angelo; for the bless have sta'd by the old;
-Therefore steop thou that slew'st are thesend heolds
-To doubtle of the golden prince? Sup,
-Your nurpily ended on this a youth,
-The loving suisteres of tremble.
-
-MERCUTIO:
-So stay, O, his rever sis advantage an enjoy!
-Stabbeth! Was sleep, how smile, we'll quive a patticock:
-is nob
-"""
