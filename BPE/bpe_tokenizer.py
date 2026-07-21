@@ -1,4 +1,5 @@
 import regex as re
+import json
 
 def text_processing(text):
     # split by key break points (using the same one as gpt-2)
@@ -32,6 +33,7 @@ def merge(tokens, pair, idx):
     return newids
 
 def training(text, mergecount):
+    global merges, vocab
     # encode text
     tokens = text_processing(text)
     store_encodings = tokens.copy()
@@ -40,6 +42,8 @@ def training(text, mergecount):
     merges = {}
     for i in range(mergecount):
         pairs = find_pairs(tokens)
+        if not pairs:
+            break
         highest_pair = max(pairs, key=pairs.get)
         idx = 256 + i
         tokens = merge(tokens, highest_pair, idx)
@@ -73,8 +77,6 @@ def encoder(text):
         result.append(row)
     return result
 
-import json
-
 def save_tokenizer(merges, vocab, path="tokenizer.json"):
     merges_json = {f"{a},{b}": idx for (a, b), idx in merges.items()}
     vocab_json = {str(idx): list(b) for idx, b in vocab.items()}
@@ -90,7 +92,6 @@ def load_tokenizer(path="tokenizer.json"):
     return merges, vocab
 
 
-text = "Hello, world! This is a test of the BPE tokenizer. Let's see how it handles this text."
-merges, vocab, store_encodings = training(text, mergecount=10)
-
+# text = "Hello, world! This is a test of the BPE tokenizer. Let's see how it handles this text."
+# merges, vocab, store_encodings = training(text, mergecount=10)
 # print(decoder(encoder("Hello, world! This is a test of the BPE tokenizer. Let's see how it handles this text.")))
