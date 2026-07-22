@@ -9,3 +9,5 @@ def report_cpt(train_text, val_text, encode_fn):
 
     print(f"chars-per-token: train: {cpt_train:.4f}, val: {cpt_val:.4f}")
     return {"cpt_train": cpt_train, "cpt_val": cpt_val}
+
+

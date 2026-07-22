@@ -2,9 +2,9 @@
 
 from bpe_tokenizer import training, save_tokenizer
 
-merge_count = 500
+merge_count = 300
 
-with open("shakespeare.txt") as f:
+with open("../shakespeare.txt") as f:
     text = f.read()
 
 # match the same 90/10 split used in train_gpt.py

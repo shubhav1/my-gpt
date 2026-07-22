@@ -64,3 +64,7 @@ python train_gpt.py
 ## Status
 
 WIP. I'm adding pieces as I learn them: baseline transformer first, then BPE, then a proper tokenization ablation with BPB. Not a finished project; expect debug flags, incomplete metrics, and notes in `experimentation/` that aren't cleaned up yet.
+
+
+notes as i add/change implementation:
+- switching to bfloat16 for improved efficiency (hopefully)

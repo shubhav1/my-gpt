@@ -49,7 +49,7 @@ def training(text, mergecount):
         tokens = merge(tokens, highest_pair, idx)
         merges[highest_pair] = idx
         # print(f"merged {highest_pair} into a new token {idx}")
-        if (i+1)%50 == 0:
+        if i%50 == 0:
             print(f"completed {i} merges")
     
     vocab = {i:bytes([i]) for i in range(256)}
