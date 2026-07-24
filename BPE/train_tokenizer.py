@@ -2,7 +2,7 @@
 
 from bpe_tokenizer import training, save_tokenizer
 
-merge_count = 300
+merge_count = 500
 
 with open("../shakespeare.txt") as f:
     text = f.read()

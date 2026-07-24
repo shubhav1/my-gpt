@@ -13,7 +13,7 @@ Decoder-only transformer with causal self-attention, pre-norm residual blocks, a
 | `batch_size` | 64 |
 | `block_size` | 256 |
 | `max_iters` | 2000 (ablation target; see Status) |
-| `eval_interval` | 100 |
+| `eval_interval` | 200 |
 | `learning_rate` | 3e-4 |
 | `eval_iters` | 200 |
 | `n_embd` | 384 |
@@ -23,11 +23,12 @@ Decoder-only transformer with causal self-attention, pre-norm residual blocks, a
 
 Vocab size is 256 for the byte-level baseline, or `256 + num_merges` with BPE (500 merges → 756). This may change based on my experiments, but the ablation plan is to hold all hyperparameters constant except for merge count.
 
+
 Device: MPS if available, else CPU (`train_gpt.py`).
 
 ## Tokenization ablation
 
-This is the main thing I'm measuring right now: from-scratch BPE (`BPE/bpe_tokenizer.py`) vs a UTF-8 byte-level baseline (`USE_BPE = False` in `train_gpt.py`). No tiktoken / sentencepiece for the actual tokenizer — `regex` is used only for the GPT-2-style pretoken split. Refer to `experimentation/BPE.md` for more information on the ablation plan.
+This is the main thing I've experimented with: from-scratch BPE (`BPE/bpe_tokenizer.py`) vs a UTF-8 byte-level baseline (`USE_BPE = False` in `train_gpt.py`). No tiktoken / sentencepiece for the actual tokenizer, `regex` is used only for the GPT-2-style pretoken split. Refer to `experimentation/BPE.md` for the detailed experiment plan, results, and analysis.
 
 ## How to run
 
@@ -60,11 +61,3 @@ cd ..
 
 python train_gpt.py
 ```
-
-## Status
-
-WIP. I'm adding pieces as I learn them: baseline transformer first, then BPE, then a proper tokenization ablation with BPB. Not a finished project; expect debug flags, incomplete metrics, and notes in `experimentation/` that aren't cleaned up yet.
-
-
-notes as i add/change implementation:
-- switching to bfloat16 for improved efficiency (hopefully)

@@ -32,7 +32,7 @@ time/signal tradeoff since full runs take hours each on the available hardware (
 - Chars-per-token (cpt) : characters / tokens on the validation set
 - Wall-clock time per iteration
 - Generation quality (qualitative)
-- Bits-per-byte (bpb) : `val_loss / (cpt × ln(2))`
+- Bits-per-byte (bpb) : `val_loss / (cpt × ln(2))` for natural log cross entropy
 
 ## Results summary
 
@@ -47,6 +47,15 @@ time/signal tradeoff since full runs take hours each on the available hardware (
 *Ordered by merge count. Loss is not comparable across rows directly since
 vocabulary changes with merge count : bpb is the fair comparison metric.*
 
+I decided this wasn't an accurate ablation experiment since I didn't run to convergence, so I ran the baseline and 500 merges to convergence. The results are summarized below.
+
+| Round | Merges | Final val loss | Final val bpb | cpt (val) | ms/iter | Overfit gap (val - train) | Iters to convergence |
+|---|---|---|---|---|---|---|---|
+| 1 | 0 | 1.5303 | 2.2078 | 1.0000 | ~664 | 0.2615 | ~2200 |
+| 2 | 500 | 3.1794 | 2.1778 | 2.1062 | ~668 | 1.0252 | ~1900 |
+
+BPE allows the model to converge significantly faster (~300 less iterations), to a lower bpb, and with a similar time per iteration. The outputs are generally similar in quality, though the BPE version produces longer versions (obviously) with marginally more coherence (though that could just be random). That being said, there's a clear cost of overfitting with BPE.
+
 ## Key findings
 
 **Loss curves, ascending merge count:**
@@ -56,13 +65,14 @@ vocabulary changes with merge count : bpb is the fair comparison metric.*
 | ![0 merge loss curve](BPE_loss_curves/0_mc.png) | ![100 merge loss curve](BPE_loss_curves/100_mc.png) | ![300 merge loss curve](BPE_loss_curves/300_mc.png) | ![500 merge loss curve](BPE_loss_curves/500_mc.png) | ![1000 merge loss curve](BPE_loss_curves/1000_mc.png) |
 
 Here are my major takeaways:
-- interesting how the graph changes
-- overfitting grows with merge count (whih makes sense)
-- 500 has the lowest ms/iter - what causes this? why is 1000 slower than 300? is it just noise?
-- val los clearly grows with merge count - does this mean that higher merge count means more iterations are necessary for convergance or just that convergane happens at a higher loss?
-- bpb is fairly stable, dipping around 100-500 merges and rising again at 100 merges.
-- work in progress, this section is not done yet
+- The graph shape changes consistently with increased merge count. The baseline has clear "beginner gains" that get less and less prominent with more merges. This is likely because: (1) The easy beginner wins happen when there is a smaller vocab size so certain tokens are a lot more common and easy to fit to. As I increase vocab size, there aren't as many easy wins because each token is less common. (2) Some "beginner wins" are already incorporated in the tokenizer. For example, the tokenizer may already group "ing" so the model doesn't need to learn to predict i->n->g.
+- Overfitting grows with merge count (which makes sense). My hypothesis is that this is because (1) the BPE model has more parameters with the large vocab and is more prone to overfitting and also (2) that the tokenizer itself is a little overfit to the training data since it was trained on the same corpus. I might investigate this again by training the tokenizer on text that isn't the exact training data.
+- 500 has the lowest ms/iter of all the different merge counts. I can't pinpoint exactly why, probably something related to my hardware that I haven't learned or just noise (might rerun in the future to further investigate). I'd expect ms/iter to increase with merge count since the embedding layer is larger, but that doesn't hold up. 
+- If I didn't have a fixed context length, the BPE tokenizer would probably increase efficiency by reducing the length of the input sequence. 
+- BPB is fairly stable, dipping around 100-500 merges and rising again at 1000 merges. This makes sense based on the overfitting point.
+- A next step I'd want to do is training to val loss convergence rather than just BPB and see how much my results change.
 
+Generally, I definitely see the benefits of BPE, and I think a lot of the downsides I'm seeing here with overfitting are because of my small dataset.
 
 ## Per-round detail
 
@@ -360,7 +370,8 @@ is clearly the worst, with the longest and most tangled token garbling
 - this ranking isn't conclusive since it's based on one sample + eyeballing
 
 ## Open questions
-It's clear that this isn't a very accurate "test" for how useful BPE is since I held all hyperparameters constant and didn't run to convergence. 500 merges does seem to emerge as the best BPE setting, but we 
+
+This obviously isn't a very accurate "test" for how useful BPE is since I held all hyperparameters constant and didn't run to convergence. 500 merges does seem to emerge as the best BPE setting, but we 
 don't have a clear comparison of how it performs in comparison to the baseline when run to convergence. 
 
 This is also an interesting thing to think about for ablation experiments in general: how do you design an
@@ -370,8 +381,123 @@ Regardless, for the integrity of the experiment, I want to do a REAL ablation wh
 
 Convergence criterion: Validation bpb is evaluated every 100 iterations. Training is considered converged once three consecutive validation bpb measurements fall within a 0.01 range of each other. The reported result is the checkpoint with the lowest validation bpb observed over the run, not necessarily the final step.
 
-### Baseline results (to convergence)
-work in progress
+### Results:
+## Summary
 
-### BPE (500 merges) results (to convergence)
-work in progress
+| | Baseline | BPE (500 merges) |
+|---|---|---|
+| chars/token (val) | 1.0000 | 2.1062 |
+| Converged at step | 2400 | 1900 |
+| Best val bpb | 2.2041 (step 2200) | 2.1539 (step 1400) |
+| ms/iter | ~664 | ~668 |
+| loss curves | ![0 merge to convergence loss curve](BPE_loss_curves/0_to_convergence.png) | ![500 merge to convergence loss curve](BPE_loss_curves/500_to_convergence.png) |
+
+BPE hit a lower best val bpb (2.1539 vs 2.2041) and converged sooner (step 1900 vs 2400), despite similar per-iteration cost, so on a wall-clock basis it's a clearer win than the bpb numbers alone suggest. Looking at the ouputs, they two perform similarly well, though BPE responses are longer and slightly more coherent. Considering it took less time and fewer iterations to get to this point, BPE definitely seems to be a net win in this experiment.
+
+Side note: I changed eval_interval to 100 to get more frequent updates, but I forgot to chagne eval_iters, meaning it was still averaging over the last 200 iterations. Therefore, the loss curve is probably smoother looking than it should be, but the final loss + overall trend is still valid.
+
+### Raw results
+
+**Baseline results (to convergence)**
+using MPS
+chars-per-token: train: 1.0000, val: 1.0000
+step 100: train loss 2.4914, val loss 2.5041, val bpb 3.6126, ms/iter 684.23
+step 200: train loss 2.4191, val loss 2.4413, val bpb 3.5220, ms/iter 671.90
+step 300: train loss 2.2815, val loss 2.3054, val bpb 3.3260, ms/iter 663.67
+step 400: train loss 2.0801, val loss 2.1496, val bpb 3.1012, ms/iter 664.25
+step 500: train loss 1.9343, val loss 2.0293, val bpb 2.9276, ms/iter 662.80
+step 600: train loss 1.8133, val loss 1.9426, val bpb 2.8026, ms/iter 659.78
+step 700: train loss 1.7218, val loss 1.8715, val bpb 2.7000, ms/iter 671.09
+step 800: train loss 1.6524, val loss 1.8077, val bpb 2.6080, ms/iter 663.60
+step 900: train loss 1.5958, val loss 1.7612, val bpb 2.5408, ms/iter 662.49
+step 1000: train loss 1.5471, val loss 1.7313, val bpb 2.4977, ms/iter 663.94
+step 1100: train loss 1.5117, val loss 1.7023, val bpb 2.4560, ms/iter 665.61
+step 1200: train loss 1.4779, val loss 1.6743, val bpb 2.4155, ms/iter 661.23
+step 1300: train loss 1.4499, val loss 1.6465, val bpb 2.3754, ms/iter 665.90
+step 1400: train loss 1.4203, val loss 1.6272, val bpb 2.3476, ms/iter 667.07
+step 1500: train loss 1.4000, val loss 1.6113, val bpb 2.3246, ms/iter 663.51
+step 1600: train loss 1.3780, val loss 1.5991, val bpb 2.3070, ms/iter 664.77
+step 1700: train loss 1.3614, val loss 1.5818, val bpb 2.2821, ms/iter 665.46
+step 1800: train loss 1.3410, val loss 1.5628, val bpb 2.2546, ms/iter 662.11
+step 1900: train loss 1.3276, val loss 1.5612, val bpb 2.2523, ms/iter 661.75
+step 2000: train loss 1.3138, val loss 1.5479, val bpb 2.2331, ms/iter 660.11
+step 2100: train loss 1.2962, val loss 1.5415, val bpb 2.2239, ms/iter 665.46
+step 2200: train loss 1.2847, val loss 1.5278, val bpb 2.2041, ms/iter 662.12
+step 2300: train loss 1.2730, val loss 1.5288, val bpb 2.2055, ms/iter 663.58
+step 2400: train loss 1.2688, val loss 1.5303, val bpb 2.2078, ms/iter 663.55
+converged at step 2400
+bed a king holing:
+Hall to set reepary'd side Caebproat her,
+Mants, and sorried. I twick you see us a widow,
+Lord wife untiged with your good our suits:
+And, or that set ungent-day's life,
+Though being your sod, whom more the seat in all,
+I'lds sil part to answering deserby of that saye
+Shalt be age to be but again spite worse.
+
+STRON:
+It would sin an't.
+
+Nurse:
+With safe to will her, madam;
+Ay, if thou turn, he troy time:
+Yet myster abide purches in the suitssibr's done;
+I think steat this patt
+
+**BPE (500 merges) results (to convergence)**
+using MPS
+chars-per-token: train: 2.2338, val: 2.1062
+step 100: train loss 4.0803, val loss 4.1896, val bpb 2.8698, ms/iter 693.59
+step 200: train loss 3.7837, val loss 3.9331, val bpb 2.6941, ms/iter 663.59
+step 300: train loss 3.6699, val loss 3.8243, val bpb 2.6196, ms/iter 667.92
+step 400: train loss 3.5270, val loss 3.7077, val bpb 2.5397, ms/iter 667.40
+step 500: train loss 3.3691, val loss 3.6010, val bpb 2.4666, ms/iter 670.65
+step 600: train loss 3.2090, val loss 3.4901, val bpb 2.3907, ms/iter 665.41
+step 700: train loss 3.0702, val loss 3.3819, val bpb 2.3165, ms/iter 667.34
+step 800: train loss 2.9571, val loss 3.3169, val bpb 2.2720, ms/iter 666.82
+step 900: train loss 2.8583, val loss 3.2620, val bpb 2.2344, ms/iter 667.82
+step 1000: train loss 2.7742, val loss 3.2204, val bpb 2.2059, ms/iter 666.79
+step 1100: train loss 2.6914, val loss 3.1877, val bpb 2.1835, ms/iter 666.06
+step 1200: train loss 2.6238, val loss 3.1870, val bpb 2.1830, ms/iter 672.01
+step 1300: train loss 2.5532, val loss 3.1639, val bpb 2.1672, ms/iter 668.19
+step 1400: train loss 2.4856, val loss 3.1445, val bpb 2.1539, ms/iter 674.38
+step 1500: train loss 2.4179, val loss 3.1626, val bpb 2.1663, ms/iter 665.37
+step 1600: train loss 2.3560, val loss 3.1588, val bpb 2.1637, ms/iter 667.36
+step 1700: train loss 2.2910, val loss 3.1748, val bpb 2.1747, ms/iter 672.97
+step 1800: train loss 2.2267, val loss 3.1736, val bpb 2.1739, ms/iter 667.20
+step 1900: train loss 2.1542, val loss 3.1794, val bpb 2.1778, ms/iter 668.17
+converged at step 1900
+ail of tails' me my tongue,
+Stay; and ne'er was we but knock
+Not me by and ears that you can
+ementer vengeance for welcall'd death,
+And, unroo years to Still never accided which
+He can a noble to him, 'mans wine, him took thy preft his heart.
+
+First Hunts no cause;
+And speak more than would but fly to prove a lamb:
+So throw such as weep forth
+To waxeful times would say pardon him with light.
+
+RICHARD:
+What, trandam? Then, madam, thy glory is chances;
+Which for all duper vile honourable in stuffices,
+Thesere of honey sun most oppose crown,
+My love town device in sorrowing stines that right of death:
+That Anspairs they heavy no he had pity
+Thinkerly to my hopead away on up.
+
+SOMERSET:
+Come, and stir my Lord;
+O, it is banish'd woman, never casting me from fiend,
+O that beauty heart in scarled, one love,
+Is forth the tide of grief accupil
+Upon the poorthy proud tegues and bad tidings
+Terman, as after together;
+For truth, envy in the nought,
+And pins me but out of true many never.
+
+QUEEN MARGARET:
+The bitter son's Pauliet smoid, canno twenty himself,
+And sing his porting put in the age of tent
+But shople professorm

@@ -22,8 +22,8 @@ else:
     device = 'cpu'
     print('using CPU')
 
-run_name = "0_to_convergence"
-USE_BPE = False
+run_name = "500_to_convergence"
+USE_BPE = True
 RUN_TO_CONVERGENCE = True
 
 # stat tracking
