@@ -62,7 +62,7 @@ BPE allows the model to converge significantly faster (~300 less iterations), to
 
 | 0 merges (baseline) | 100 merges | 300 merges | 500 merges | 1000 merges |
 |---|---|---|---|---|
-| ![0 merge loss curve](BPE_loss_curves/0_mc.png) | ![100 merge loss curve](BPE_loss_curves/100_mc.png) | ![300 merge loss curve](BPE_loss_curves/300_mc.png) | ![500 merge loss curve](BPE_loss_curves/500_mc.png) | ![1000 merge loss curve](BPE_loss_curves/1000_mc.png) |
+| ![0 merge loss curve](loss_curves/BPE_loss_curves/0_mc.png) | ![100 merge loss curve](loss_curves/BPE_loss_curves/100_mc.png) | ![300 merge loss curve](loss_curves/BPE_loss_curves/300_mc.png) | ![500 merge loss curve](loss_curves/BPE_loss_curves/500_mc.png) | ![1000 merge loss curve](loss_curves/BPE_loss_curves/1000_mc.png) |
 
 Here are my major takeaways:
 - The graph shape changes consistently with increased merge count. The baseline has clear "beginner gains" that get less and less prominent with more merges. This is likely because: (1) The easy beginner wins happen when there is a smaller vocab size so certain tokens are a lot more common and easy to fit to. As I increase vocab size, there aren't as many easy wins because each token is less common. (2) Some "beginner wins" are already incorporated in the tokenizer. For example, the tokenizer may already group "ing" so the model doesn't need to learn to predict i->n->g.
@@ -92,7 +92,7 @@ step 1800: train 1.3445, val 1.5754, bpb 2.2728, 702.58 ms/iter
 step 2000: train 1.3122, val 1.5521, bpb 2.2392, 708.24 ms/iter
 ```
 
-![0 merge loss curve](BPE_loss_curves/0_mc.png)
+![0 merge loss curve](loss_curves/BPE_loss_curves/0_mc.png)
 
 **Sample output**
 
@@ -136,7 +136,7 @@ step 1800: train 2.2049, val 3.1903, bpb 2.1525,      667.09 ms/iter
 step 2000: train 2.2078, val 3.2116, bpb 2.1692,      666.81 ms/iter
 ```
 
-![500 merge loss curve](BPE_loss_curves/500_mc.png)
+![500 merge loss curve](loss_curves/BPE_loss_curves/500_mc.png)
 
 **Sample output (truncated in source)**
 
@@ -196,7 +196,7 @@ Note: train loss keeps falling past step 1200 while val loss and val bpb bottom
 out around step 1400 and then rise : the clearest overfitting signal of the five
 runs.
 
-![1000 merge loss curve](BPE_loss_curves/1000_mc.png)
+![1000 merge loss curve](loss_curves/BPE_loss_curves/1000_mc.png)
 
 **Sample output**
 
@@ -259,7 +259,7 @@ step 1800: train 1.8823, val 2.3951, bpb 2.1590, 685.29 ms/iter
 step 2000: train 1.8231, val 2.3886, bpb 2.1532, 689.26 ms/iter
 ```
 
-![100 merge loss curve](BPE_loss_curves/100_mc.png)
+![100 merge loss curve](loss_curves/BPE_loss_curves/100_mc.png)
 
 **Sample output**
 
@@ -307,7 +307,7 @@ step 1800: train 2.1074, val 2.8991, bpb 2.1477, 689.78 ms/iter
 step 2000: train 2.0130, val 2.9202, bpb 2.1634, 690.82 ms/iter
 ```
 
-![300 merge loss curve](BPE_loss_curves/300_mc.png)
+![300 merge loss curve](loss_curves/BPE_loss_curves/300_mc.png)
 
 **Sample output**
 
@@ -390,7 +390,7 @@ Convergence criterion: Validation bpb is evaluated every 100 iterations. Trainin
 | Converged at step | 2400 | 1900 |
 | Best val bpb | 2.2041 (step 2200) | 2.1539 (step 1400) |
 | ms/iter | ~664 | ~668 |
-| loss curves | ![0 merge to convergence loss curve](BPE_loss_curves/0_to_convergence.png) | ![500 merge to convergence loss curve](BPE_loss_curves/500_to_convergence.png) |
+| loss curves | ![0 merge to convergence loss curve](loss_curves/BPE_loss_curves/0_to_convergence.png) | ![500 merge to convergence loss curve](loss_curves/BPE_loss_curves/500_to_convergence.png) |
 
 BPE hit a lower best val bpb (2.1539 vs 2.2041) and converged sooner (step 1900 vs 2400), despite similar per-iteration cost, so on a wall-clock basis it's a clearer win than the bpb numbers alone suggest. Looking at the ouputs, they two perform similarly well, though BPE responses are longer and slightly more coherent. Considering it took less time and fewer iterations to get to this point, BPE definitely seems to be a net win in this experiment.
 

@@ -15,14 +15,18 @@ def get_batch(split, train_data, val_data, block_size, batch_size, device):
     return x, y
 
 @torch.no_grad()
-def estimate_loss(model, eval_iters, train_data, val_data, block_size, batch_size, device):
+def estimate_loss(model, eval_iters, train_data, val_data, block_size, batch_size, device, USE_BF16):
     out = {}
     model.eval()
     for split in ['train', 'val']:
         losses = torch.zeros(eval_iters)
         for k in range(eval_iters):
             X, Y = get_batch(split, train_data, val_data, block_size, batch_size, device)
-            logits, loss = model(X, Y)
+            if USE_BF16:
+                with torch.autocast(device_type=device, dtype=torch.bfloat16):
+                    logits, loss = model(X, Y)
+            else:
+                logits, loss = model(X, Y)
             losses[k] = loss.item()
         out[split] = losses.mean()
     model.train()
@@ -162,7 +166,7 @@ class GPTLanguageModel(nn.Module):
         import matplotlib.pyplot as plt
         import os
 
-        img_path = f"experimentation/BPE_loss_curves/{run_name}.png"
+        img_path = f"experimentation/loss_curves/{run_name}.png"
         os.makedirs(os.path.dirname(img_path), exist_ok=True)
 
         plt.plot(self.lossi)

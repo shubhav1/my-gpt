@@ -7,7 +7,7 @@ import math
 batch_size = 64
 block_size = 256
 max_iters = 2000
-eval_interval = 100 # how often it prints validation loss
+eval_interval = 200
 learning_rate = 3e-4
 eval_iters = 200
 n_embd = 384
@@ -22,9 +22,10 @@ else:
     device = 'cpu'
     print('using CPU')
 
-run_name = "500_to_convergence"
+run_name = "bf16"
 USE_BPE = True
-RUN_TO_CONVERGENCE = True
+RUN_TO_CONVERGENCE = False
+USE_BF16 = True
 
 # stat tracking
 PRINT_CPT = True
@@ -103,7 +104,11 @@ for iter in range(max_iters):
     xb, yb = get_batch('train', train_data, val_data, block_size, batch_size, device)
 
     # evaluate the loss
-    logits, loss = model(xb, yb)
+    if USE_BF16:
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
+            logits, loss = model(xb, yb)
+    else:
+        logits, loss = model(xb, yb)
     model.lossi.append(loss.item())
     optimizer.zero_grad(set_to_none=True)
     loss.backward()
@@ -113,8 +118,8 @@ for iter in range(max_iters):
     iter_times.append(t1-t0)
 
     # every once in a while evaluate the loss on train and val sets
-    if (iter+1) % eval_interval == 0 or iter == (max_iters-1):
-        losses = estimate_loss(model, eval_iters, train_data, val_data, block_size, batch_size, device)
+    if iter==0 or (iter+1) % eval_interval == 0 or iter == (max_iters-1):
+        losses = estimate_loss(model, eval_iters, train_data, val_data, block_size, batch_size, device, USE_BF16)
         bpb = losses['val'].item() / ( cpt_result['cpt_val'] * math.log(2) )
         avg_iter_time = sum(iter_times[-eval_interval:]) / len(iter_times[-eval_interval:])
         losses_over_time.append([losses['train'].item(), losses['val'].item(), bpb])
