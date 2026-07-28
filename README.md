@@ -33,7 +33,7 @@ As I learn new features to add to the model, I'm running small experiments/ablat
 This is the main thing I've experimented with: from-scratch BPE (`BPE/bpe_tokenizer.py`) vs a UTF-8 byte-level baseline (`USE_BPE = False` in `train_gpt.py`). No tiktoken / sentencepiece for the actual tokenizer, `regex` is used only for the GPT-2-style pretoken split. Refer to `experimentation/BPE.md` for the detailed experiment plan, results, and analysis.
 
 ## BF16 vs FL32
-I switched to BF16 using torch autocast and compared the results. Refer to `experimentation/bf16.md` for details.
+I switched to BF16 using torch autocast and compared the results. This ended up being inconclusive since I'm running on MPS and not CUDA. Refer to `experimentation/bf16.md` for details.
 
 ## More to come!
 
