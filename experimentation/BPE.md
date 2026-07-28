@@ -399,6 +399,7 @@ Side note: I changed eval_interval to 100 to get more frequent updates, but I fo
 ### Raw results
 
 **Baseline results (to convergence)**
+```
 using MPS
 chars-per-token: train: 1.0000, val: 1.0000
 step 100: train loss 2.4914, val loss 2.5041, val bpb 3.6126, ms/iter 684.23
@@ -425,6 +426,13 @@ step 2100: train loss 1.2962, val loss 1.5415, val bpb 2.2239, ms/iter 665.46
 step 2200: train loss 1.2847, val loss 1.5278, val bpb 2.2041, ms/iter 662.12
 step 2300: train loss 1.2730, val loss 1.5288, val bpb 2.2055, ms/iter 663.58
 step 2400: train loss 1.2688, val loss 1.5303, val bpb 2.2078, ms/iter 663.55
+```
+
+![0 merge to convergence](loss_curves/BPE_loss_curves/0_to_convergence.png)
+
+**Sample output**
+
+```
 converged at step 2400
 bed a king holing:
 Hall to set reepary'd side Caebproat her,
@@ -443,8 +451,11 @@ With safe to will her, madam;
 Ay, if thou turn, he troy time:
 Yet myster abide purches in the suitssibr's done;
 I think steat this patt
+```
 
 **BPE (500 merges) results (to convergence)**
+
+```
 using MPS
 chars-per-token: train: 2.2338, val: 2.1062
 step 100: train loss 4.0803, val loss 4.1896, val bpb 2.8698, ms/iter 693.59
@@ -467,6 +478,13 @@ step 1700: train loss 2.2910, val loss 3.1748, val bpb 2.1747, ms/iter 672.97
 step 1800: train loss 2.2267, val loss 3.1736, val bpb 2.1739, ms/iter 667.20
 step 1900: train loss 2.1542, val loss 3.1794, val bpb 2.1778, ms/iter 668.17
 converged at step 1900
+```
+
+![500 merge to convergence](loss_curves/BPE_loss_curves/500_to_convergence.png)
+
+**Sample output**
+
+```
 ail of tails' me my tongue,
 Stay; and ne'er was we but knock
 Not me by and ears that you can
@@ -501,3 +519,4 @@ QUEEN MARGARET:
 The bitter son's Pauliet smoid, canno twenty himself,
 And sing his porting put in the age of tent
 But shople professorm
+```
