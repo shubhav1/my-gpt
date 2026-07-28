@@ -26,16 +26,13 @@ Vocab size is 256 for the byte-level baseline, or `256 + num_merges` with BPE (5
 
 Device: MPS if available, else CPU (`train_gpt.py`).
 
-## Experiments
-As I learn new features to add to the model, I'm running small experiments/ablations to understand their effect on training speed, loss, and generation quality.
+## Updates
 
-### Tokenization ablation
-This is the main thing I've experimented with: from-scratch BPE (`BPE/bpe_tokenizer.py`) vs a UTF-8 byte-level baseline (`USE_BPE = False` in `train_gpt.py`). No tiktoken / sentencepiece for the actual tokenizer, `regex` is used only for the GPT-2-style pretoken split. Refer to `experimentation/BPE.md` for the detailed experiment plan, results, and analysis.
+This started as replication of the Attention Is All You Need paper, guided by Andrej Karpathy's zero to hero course. Now, as I learn more, I'm updating the code along the way (and running small experiments sometimes). Here is a live list of updates:
+- implemented BPE tokenizer and ran ablation comparing BPE vs UTF-8 byte-level baseline (see `experimentation/BPE.md`)
+- implemented bf16 training using torch autocast and ran ablation comparing bf16 vs fp32 (see `experimentation/bf16.md`). not using this one for now, sticking to fp32 until I can run on CUDA with tensor cores.
+- switched to prenorm, applying layernorm out of residual stream, before attention and ffwd blocks (see `experimentation/prenorm.md`)
 
-## BF16 vs FL32
-I switched to BF16 using torch autocast and compared the results. This ended up being inconclusive since I'm running on MPS and not CUDA. Refer to `experimentation/bf16.md` for details.
-
-## More to come!
 
 ## How to run
 

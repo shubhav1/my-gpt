@@ -66,9 +66,11 @@ class MultiHeadAttention(nn.Module):
         self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout) for _ in range(num_heads)])
         self.proj = nn.Linear(num_heads * head_size, n_embd)
         self.dropout = nn.Dropout(dropout)
+        self.ln1 = nn.LayerNorm(n_embd)
     
     def forward(self, x):
-        out = torch.cat([h(x) for h in self.heads], dim=-1)
+        x_norm = self.ln1(x)
+        out = torch.cat([h(x_norm) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
 
@@ -78,6 +80,7 @@ class FeedForward(nn.Module):
     def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
+            nn.LayerNorm(n_embd),
             nn.Linear(n_embd, 4 * n_embd),
             nn.ReLU(),
             nn.Linear(4 * n_embd, n_embd),
@@ -96,12 +99,12 @@ class Block(nn.Module):
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(n_head, head_size, n_embd, block_size, dropout)
         self.ffwd = FeedForward(n_embd, dropout)
-        self.ln1 = nn.LayerNorm(n_embd)
-        self.ln2 = nn.LayerNorm(n_embd)
+        # self.ln1 = nn.LayerNorm(n_embd)
+        # self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
-        x = x + self.sa(self.ln1(x)) # residual connections
-        x = x + self.ffwd(self.ln2(x)) # ^
+        x = x + self.sa(x) # residual connections
+        x = x + self.ffwd(x) # ^
         return x
 
 class GPTLanguageModel(nn.Module):

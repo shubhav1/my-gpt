@@ -22,15 +22,16 @@ else:
     device = 'cpu'
     print('using CPU')
 
-run_name = "bf16"
+run_name = "prenorm"
 USE_BPE = True
 RUN_TO_CONVERGENCE = False
-USE_BF16 = True
+USE_BF16 = False
 
 # stat tracking
 PRINT_CPT = True
 SAVE_LOSS_CURVE = True
 USE_EVAL_INTERVAL = True
+PRINT_BPB = True
 
 if not USE_EVAL_INTERVAL:
     eval_interval = max_iters + 1
@@ -123,12 +124,16 @@ for iter in range(max_iters):
         bpb = losses['val'].item() / ( cpt_result['cpt_val'] * math.log(2) )
         avg_iter_time = sum(iter_times[-eval_interval:]) / len(iter_times[-eval_interval:])
         losses_over_time.append([losses['train'].item(), losses['val'].item(), bpb])
-        print(f"step {iter + 1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, "
-              f"val bpb {bpb:.4f}, ms/iter {avg_iter_time*1000:.2f}")
+        if PRINT_BPB:
+            print(f"step {iter + 1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, "
+                f"val bpb {bpb:.4f}, ms/iter {avg_iter_time*1000:.2f}")
+        else:
+            print(f"step {iter + 1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, "
+                f"ms/iter {avg_iter_time*1000:.2f}")
         if RUN_TO_CONVERGENCE:
             if len(losses_over_time) >= 3:
-                last_three_bpb = [x[2] for x in losses_over_time[-3:]]
-                if max(last_three_bpb) - min(last_three_bpb) < 0.01:
+                last_three = [x[0] for x in losses_over_time[-3:]]
+                if max(last_three) - min(last_three) < 0.01:
                     print(f"converged at step {iter + 1}")
                     break
 
