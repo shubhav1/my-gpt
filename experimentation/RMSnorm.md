@@ -25,14 +25,15 @@ Beyond that, I'm going to keep all other hyperparameters stagnant.
 | Best val loss (step 1400) | 3.1415 | 3.1336 | -0.0079 |
 | Final val bpb (step 2000) | 2.2009 | 2.1927 | -0.0082 |
 
+## Analysis
+
 My first hypothesis that RMSNorm and LayerNorm would have similar loss values is correct and remains correct throughout the training. 
 
 However, the second hypothesis was very much incorrect. RMSNorm took significantly longer to run than LayerNorm, which is not only the opposite of what I expected, but also the opposite of what much research suggests. RMSNorm is less computationally and memory intensive than LayerNorm, and I expected that to be reflected.
 
 The only things that changed in implementation are that I switched nn.LayerNorm with nn.RMSNorm and removed the bias term from the normalization (which shouldn't affect much). So, I'm currently trying to explore of torch RMSNorm is optimized for MPS, or if there's some sort of MPS implementation that has occurred for LayerNorm that hasn't occurred for RMSNorm, causing the discrepancy.
 
-
-## Analysis
+I'm going to further investigate to 1) see if there was something I implemented incorrectly, 2) see if there is a known issue in torch RMSNorm with MPS, and 3) look into the actual torch implementations of RMSNorm and LayerNorm to see if there's something that would explain the discrepancy.
 
 
 ## Raw results
