@@ -2,6 +2,8 @@
 
 Comparing model performance and training stability when using prenorm vs residual norm (original transformer architecture).
 
+## Method
+
 All hyperparameters are identical between runs except for matrix dtype. Both runs use the same tokenizer (BPE, 500 merges), same dataset (`shakespeare.txt`).
 
 | Hyperparameter | Value |

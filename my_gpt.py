@@ -64,9 +64,9 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, num_heads, head_size, n_embd, block_size, dropout):
         super().__init__()
         self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout) for _ in range(num_heads)])
-        self.proj = nn.Linear(num_heads * head_size, n_embd)
+        self.proj = nn.Linear(num_heads * head_size, n_embd, bias=False)
         self.dropout = nn.Dropout(dropout)
-        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln1 = nn.RMSNorm(n_embd)
     
     def forward(self, x):
         x_norm = self.ln1(x)
@@ -80,10 +80,10 @@ class FeedForward(nn.Module):
     def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            nn.LayerNorm(n_embd),
-            nn.Linear(n_embd, 4 * n_embd),
+            nn.RMSNorm(n_embd),
+            nn.Linear(n_embd, 4 * n_embd, bias=False),
             nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd),
+            nn.Linear(4 * n_embd, n_embd, bias=False),
             nn.Dropout(dropout), 
         )
     
@@ -99,8 +99,6 @@ class Block(nn.Module):
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(n_head, head_size, n_embd, block_size, dropout)
         self.ffwd = FeedForward(n_embd, dropout)
-        # self.ln1 = nn.LayerNorm(n_embd)
-        # self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
         x = x + self.sa(x) # residual connections
@@ -123,8 +121,8 @@ class GPTLanguageModel(nn.Module):
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
-        self.ln_f = nn.LayerNorm(n_embd) # final layer norm
-        self.lm_head = nn.Linear(n_embd, vocab_size)
+        self.ln_f = nn.RMSNorm(n_embd)
+        self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
         self.lossi = []
 
     def forward(self, idx, targets=None):

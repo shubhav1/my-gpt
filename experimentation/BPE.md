@@ -1,7 +1,5 @@
 # BPE Tokenization Experiments
 
-## Goal
-
 Understand the actual value of adding BPE to the baseline transformer (the first
 addition made on top of it) by comparing performance without BPE against BPE at
 different merge counts.

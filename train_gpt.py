@@ -22,7 +22,7 @@ else:
     device = 'cpu'
     print('using CPU')
 
-run_name = "prenorm"
+run_name = "RMSnorm"
 USE_BPE = True
 RUN_TO_CONVERGENCE = False
 USE_BF16 = False

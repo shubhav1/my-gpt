@@ -32,6 +32,7 @@ This started as replication of the Attention Is All You Need paper, guided by An
 - implemented BPE tokenizer and ran ablation comparing BPE vs UTF-8 byte-level baseline (see `experimentation/BPE.md`)
 - implemented bf16 automatic mixed precision in training using torch autocast and ran ablation comparing bf16 vs fp32 (see `experimentation/bf16.md`). not using this one for now, sticking to fp32 until I can run on CUDA with tensor cores.
 - switched to prenorm, applying layernorm out of residual stream, before attention and ffwd blocks (see `experimentation/prenorm.md`)
+- switched to RMSNorm & removed bias use from all linear layers (see `experimentation/RMSnorm.md`)
 
 
 ## How to run
