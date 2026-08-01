@@ -35,6 +35,9 @@ The only things that changed in implementation are that I switched nn.LayerNorm 
 
 I'm going to further investigate to 1) see if there was something I implemented incorrectly, 2) see if there is a known issue in torch RMSNorm with MPS, and 3) look into the actual torch implementations of RMSNorm and LayerNorm to see if there's something that would explain the discrepancy.
 
+## Update
+When I use torch.compile for RMSNorm layer, the issue pretty much goes away and RMSNorm becomes significantly faster. However, If I don't use torch.compile, RMSNorm is significantly slower than LayerNorm on both MPS and CPU. To see the actual expirement I ran, refer to `experimentation/RMSnorm.py`. I want to further investigate this and understand torch backend along the way, so I'm going to start a new repository to explore this issue in more depth. The new repo is called `torch-RMSnorm-investigation` and can be found on my Github profile.
+
 
 ## Raw results
 **LayerNorm**
