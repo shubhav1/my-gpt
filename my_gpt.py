@@ -66,10 +66,10 @@ class MultiHeadAttention(nn.Module):
         self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout) for _ in range(num_heads)])
         self.proj = nn.Linear(num_heads * head_size, n_embd, bias=False)
         self.dropout = nn.Dropout(dropout)
-        self.ln1 = nn.RMSNorm(n_embd)
+        self.norm1 = (nn.RMSNorm(n_embd))
     
     def forward(self, x):
-        x_norm = self.ln1(x)
+        x_norm = self.norm1(x)
         out = torch.cat([h(x_norm) for h in self.heads], dim=-1)
         out = self.dropout(self.proj(out))
         return out
@@ -80,7 +80,7 @@ class FeedForward(nn.Module):
     def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            nn.RMSNorm(n_embd),
+            torch.compile(nn.RMSNorm(n_embd)),
             nn.Linear(n_embd, 4 * n_embd, bias=False),
             nn.ReLU(),
             nn.Linear(4 * n_embd, n_embd, bias=False),
@@ -90,6 +90,24 @@ class FeedForward(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+class SwiGLUFeedForward(nn.Module):
+    """ swiGLU feedforward layer """
+
+    def __init__(self, n_embd, dropout):
+        super().__init__()
+        self.norm = (nn.RMSNorm(n_embd))
+        hidden_size = int((8/3) * n_embd) # scaling by 2/3 to get same FLOPs as GELU
+        self.w1 = nn.Linear(n_embd, hidden_size, bias=False)
+        self.w2 = nn.Linear(n_embd, hidden_size, bias=False)
+        self.w3 = nn.Linear(hidden_size, n_embd, bias=False)
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self, x):
+        x_norm = self.norm(x)
+        x_swiglu = F.silu(self.w1(x_norm)) * self.w2(x_norm)
+        x_down = self.w3(x_swiglu)
+        return self.dropout(x_down)
+
 class Block(nn.Module):
     """ Transformer block: communication followed by computation"""
 
@@ -98,7 +116,7 @@ class Block(nn.Module):
         super().__init__()
         head_size = n_embd // n_head
         self.sa = MultiHeadAttention(n_head, head_size, n_embd, block_size, dropout)
-        self.ffwd = FeedForward(n_embd, dropout)
+        self.ffwd = SwiGLUFeedForward(n_embd, dropout)
 
     def forward(self, x):
         x = x + self.sa(x) # residual connections
@@ -121,7 +139,7 @@ class GPTLanguageModel(nn.Module):
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
-        self.ln_f = nn.RMSNorm(n_embd)
+        self.norm_f = (nn.RMSNorm(n_embd))
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
         self.lossi = []
 
@@ -133,7 +151,7 @@ class GPTLanguageModel(nn.Module):
         pos_emb = self.position_embedding_table(torch.arange(T, device=self.device)) # (T,C)
         x = tok_emb + pos_emb # (B,T,C)
         x = self.blocks(x) # apply all blocks
-        x = self.ln_f(x)
+        x = self.norm_f(x)
         logits = self.lm_head(x) # (B,T,vocab_size)
 
         if targets is None:

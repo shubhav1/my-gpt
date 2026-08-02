@@ -36,7 +36,10 @@ The only things that changed in implementation are that I switched nn.LayerNorm 
 I'm going to further investigate to 1) see if there was something I implemented incorrectly, 2) see if there is a known issue in torch RMSNorm with MPS, and 3) look into the actual torch implementations of RMSNorm and LayerNorm to see if there's something that would explain the discrepancy.
 
 ## Update
+
 When I use torch.compile for RMSNorm layer, the issue pretty much goes away and RMSNorm becomes significantly faster. However, If I don't use torch.compile, RMSNorm is significantly slower than LayerNorm on both MPS and CPU. To see the actual expirement I ran, refer to `experimentation/RMSnorm.py`. I want to further investigate this and understand torch backend along the way, so I'm going to start a new repository to explore this issue in more depth. The new repo is called `torch-RMSnorm-investigation` and can be found on my Github profile.
+
+When I use torch.compile for RMSNorm, I get 640 to 660 ms/iter, which is faster than LayerNorm! See the raw results at the bottom of this file.
 
 
 ## Raw results
@@ -61,7 +64,7 @@ step 2000: train loss 2.0988, val loss 3.2131, val bpb 2.2009, ms/iter 672.57
 
 ![layernorm loss curve](loss_curves/layernorm.png)
 
-**Sample output (truncated in source)**
+**Sample output**
 
 ```
 cellow.
@@ -130,7 +133,7 @@ step 2000: train loss 2.0830, val loss 3.2011, val bpb 2.1927, ms/iter 761.27
 
 ![RMSnorm loss curve](loss_curves/RMSnorm.png)
 
-**Sample output (truncated in source)**
+**Sample output**
 
 ```
 cells are no
@@ -166,4 +169,61 @@ Twhat deceived; nor dance to me. But come?
 DERBY:
 Yen are you, and bring too.
 The g
+```
+
+**RMSNorm (compiled)**
+```
+using MPS
+chars-per-token: train: 2.2338, val: 2.1062
+step 1: train loss 6.3388, val loss 6.3193, val bpb 4.3286, ms/iter 1822.11
+step 200: train loss 3.8007, val loss 3.9508, val bpb 2.7063, ms/iter 664.50
+step 400: train loss 3.5629, val loss 3.7740, val bpb 2.5852, ms/iter 659.20
+step 600: train loss 3.2514, val loss 3.5355, val bpb 2.4218, ms/iter 659.67
+step 800: train loss 2.9821, val loss 3.3289, val bpb 2.2803, ms/iter 656.11
+step 1000: train loss 2.7815, val loss 3.2146, val bpb 2.2020, ms/iter 644.87
+step 1200: train loss 2.6201, val loss 3.1730, val bpb 2.1735, ms/iter 659.21
+step 1400: train loss 2.4772, val loss 3.1329, val bpb 2.1460, ms/iter 664.61
+step 1600: train loss 2.3475, val loss 3.1500, val bpb 2.1577, ms/iter 647.89
+step 1800: train loss 2.2121, val loss 3.1569, val bpb 2.1624, ms/iter 654.58
+step 2000: train loss 2.0809, val loss 3.1972, val bpb 2.1901, ms/iter 669.89
+```
+
+![RMSnorm loss curve w/ compile](loss_curves/relu.png)
+
+**Sample output**
+
+```
+cells are no less than voices.
+
+Lord:
+My lords came an anchor.
+Jesu pride's indeed thine way says this goof
+Twixt for the ears he denied and brief: let him
+But yet courteen estealous horsemble belief,
+To repation a tyranted tongue in the sea,
+How ripe likewry i' the castle.
+There was the mars that place even to recumst,
+Or surches of the oracle:
+Thou art poor Happiness, and that thy factaver,
+Thou dead'st, take the feast sweet Rolo, Valus;
+Remember headful, caitifford, and bid me stol'
+I' the brief of my burning heart;
+He should be thus to speak against my cell,
+Had I none but weary in ':
+'Tis care imposed in ear toeds command, 'Good be in,
+And glad to pay me your prince, his faith,
+Rather than else doubt now, a lord,
+Have hardly barber all revenue in me;
+But from thy witness to come.' returns.
+Therefore, as als my hand,
+Sweet William Bohemia heme be Edward's great dullts.
+Madam, thus you and Ricichard! Come, tlo, marquitor,
+And pickle the heavens Bianca.
+
+QUEEN ELIZABETH:
+What news?
+
+QUEEN ELIZABETH:
+I pray thee, Richard from Ria, are you,
+And telling me, my g
 ```

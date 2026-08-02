@@ -3,6 +3,8 @@ import torch
 import time
 import math
 
+run_name = "overfitting_s5"
+
 # hyperparameters
 batch_size = 64
 block_size = 256
@@ -10,9 +12,9 @@ max_iters = 2000
 eval_interval = 200
 learning_rate = 3e-4
 eval_iters = 200
-n_embd = 384
-n_head = 6
-n_layer = 6
+n_embd = 300
+n_head = 3
+n_layer = 3
 dropout = 0.2
 
 if torch.backends.mps.is_available():
@@ -22,7 +24,6 @@ else:
     device = 'cpu'
     print('using CPU')
 
-run_name = "RMSnorm"
 USE_BPE = True
 RUN_TO_CONVERGENCE = False
 USE_BF16 = False
@@ -32,6 +33,7 @@ PRINT_CPT = True
 SAVE_LOSS_CURVE = True
 USE_EVAL_INTERVAL = True
 PRINT_BPB = True
+PRINT_CHINCHILLA_PARAMS = True
 
 if not USE_EVAL_INTERVAL:
     eval_interval = max_iters + 1
@@ -87,7 +89,20 @@ if PRINT_CPT:
     print(f"chars-per-token: train: {cpt_result['cpt_train']:.4f}, val: {cpt_result['cpt_val']:.4f}")
 
 model = GPTLanguageModel(n_head, n_embd, block_size, dropout, vocab_size, n_layer, device)
+model = torch.compile(model)
 m = model.to(device)
+
+
+if PRINT_CHINCHILLA_PARAMS:
+    def count_trainable_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    params = count_trainable_parameters(model)
+    tokens = batch_size * block_size * max_iters
+
+    print(f"Parameters: {params:,} ({params/1e6:.2f}M)")
+    print(f"Training tokens: {tokens:,} ({tokens/1e6:.2f}M)")
+    print(f"Tokens/parameter: {tokens / params:.2f}")
 
 # create a PyTorch optimizer
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
