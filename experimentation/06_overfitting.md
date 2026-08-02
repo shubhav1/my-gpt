@@ -62,8 +62,10 @@ I added Scenario 4 with 3 heads and 3 layers, but n_embd = 300 (as opposed to 25
 
 My takeaways for future runs is that reducing heads and layers to 3 each doesn't affect model performance much but cuts ms/iter very dramatically. As someone running these on my laptop, this is a huge win that I will be incorporating into future runs. Additionally, reducing n_embd from 384 to 256 seems to help with overfitting, but it also slows convergence. I think a good compromise is to use n_embd = 300, which is what I will be using for future runs. You can refer to the bottom of this file to see raw results for scenario 4 with 2500 iterations. It got to convergence around 2400, so Ill be using 2400 max_iter in future runs to optimize for the best val loss and no useless iterating.
 
-I also want to caveat that none of my takeaways can really be absolute considering this wasn't a clean ablation experiment. I was testing multiple changes at once, so I can't say for sure which change is responsible for the results. However, this was a good first pass to get a general sense of what helps with overfitting and convergence speed.
+The reason that reducing n_layer reduces ms/iter more than reducing n_embd is because it reduces the depth of the model, which reduces the number of sequential operations that need to be performed. But the new parameters also means that each head is now wider than it used to be because I didn't reduce n_embd (or d_model) proportionately to the reduction in layers/heads. This model structure is better because width is easier to parallelize than depth, so the model can be trained faster.
+- aspect ratio 100 is a safe bet and is exactly what we have now (300/3 = 100)
 
+I also want to caveat that none of my takeaways can really be absolute considering this wasn't a clean ablation experiment. I was testing multiple changes at once, so I can't say for sure which change is responsible for the results. However, this was a good first pass to get a general sense of what helps with overfitting and convergence speed.
 
 
 ## Raw results
@@ -418,7 +420,7 @@ First Watchman:
 KING EDWARD IVetch king:
 ```
 
-**Scenario 3 with 2500 runs**
+**Scenario 4 with 2500 runs**
 ```
 using MPS
 chars-per-token: train: 2.2338, val: 2.1062

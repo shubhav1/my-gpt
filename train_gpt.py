@@ -3,7 +3,7 @@ import torch
 import time
 import math
 
-run_name = "overfitting_s4_2500_iters"
+run_name = "RoPE"
 
 # hyperparameters
 batch_size = 64

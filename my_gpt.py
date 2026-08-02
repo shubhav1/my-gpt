@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+import math
+from RoPE import precompute_rope, apply_rope
 
 torch.manual_seed(1337)
 
@@ -35,19 +37,45 @@ def estimate_loss(model, eval_iters, train_data, val_data, block_size, batch_siz
 class Head(nn.Module):
     """ one head of self-attention """
     
-    def __init__(self, head_size, n_embd, block_size, dropout):
+    def __init__(self, head_size, n_embd, block_size, dropout, cos, sin):
         super().__init__()
         self.key = nn.Linear(n_embd, head_size, bias=False)
         self.query = nn.Linear(n_embd, head_size, bias=False)
         self.value = nn.Linear(n_embd, head_size, bias=False)
+
         self.register_buffer('tril', torch.tril(torch.ones(block_size, block_size)))
+        self.register_buffer('cos', cos)
+        self.register_buffer('sin', sin)
 
         self.dropout = nn.Dropout(dropout)
+
+    def apply_rope(self, x):
+        B, T, head_size = x.shape
+
+        cos = self.cos[:T] # (1, T, head_size/2)
+        sin = self.sin[:T] # (1, T, head_size/2)
+
+        x_even = x[:, :, ::2]
+        x_odd = x[:, :, 1::2]
+
+        out = torch.empty_like(x)
+
+        out[:, :, ::2] = x_even * cos - x_odd * sin
+        out[:, :, 1::2] = x_even * sin + x_odd * cos
+
+        return out
 
     def forward(self, x):
         B, T, C = x.shape
         k = self.key(x) # (B, T, C)
         q = self.query(x) # (B, T, C)
+
+        # get cos and sin for RoPE
+
+        # apply RoPE to q and k
+        q = apply_rope(q, self.cos, self.sin)
+        k = apply_rope(k, self.cos, self.sin)
+
         # compute attention scores ("affinities")
         wei = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5 # (B, T, C) @ (B, C, T) -> (B, T, T)
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf')) # (B, T, T)
@@ -63,7 +91,9 @@ class MultiHeadAttention(nn.Module):
 
     def __init__(self, num_heads, head_size, n_embd, block_size, dropout):
         super().__init__()
-        self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout) for _ in range(num_heads)])
+        self.cos, self.sin = precompute_rope(head_size, block_size)
+
+        self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout, self.cos, self.sin) for _ in range(num_heads)])
         self.proj = nn.Linear(num_heads * head_size, n_embd, bias=False)
         self.dropout = nn.Dropout(dropout)
         self.norm1 = (nn.RMSNorm(n_embd))
@@ -137,7 +167,7 @@ class GPTLanguageModel(nn.Module):
         self.device = device
 
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding_table = nn.Embedding(block_size, n_embd)
+        # self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
         self.norm_f = (nn.RMSNorm(n_embd))
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
@@ -147,9 +177,10 @@ class GPTLanguageModel(nn.Module):
         B, T = idx.shape
 
         # idx and targets are both (B,T) tensor of integers
-        tok_emb = self.token_embedding_table(idx) # (B,T,C) n_embd = C
-        pos_emb = self.position_embedding_table(torch.arange(T, device=self.device)) # (T,C)
-        x = tok_emb + pos_emb # (B,T,C)
+        # tok_emb = self.token_embedding_table(idx) # (B,T,C) n_embd = C
+        # pos_emb = self.position_embedding_table(torch.arange(T, device=self.device)) # (T,C)
+        # x = tok_emb + pos_emb # (B,T,C)
+        x = self.token_embedding_table(idx)
         x = self.blocks(x) # apply all blocks
         x = self.norm_f(x)
         logits = self.lm_head(x) # (B,T,vocab_size)
