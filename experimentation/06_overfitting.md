@@ -60,9 +60,10 @@ I added Scenario 4 with 3 heads and 3 layers, but n_embd = 300 (as opposed to 25
 - The drop in ms/iter is huge. There's no point training larger models that take nearly double the time if the performance payoff isn't there.
 - For ALL of the models, the difference in best validation loss is actually very small. Since performance doesn't vary much for different hyperparameters, my focus should be on the other factors I can control (overfitting, convergence speed, runtime, etc.)
 
-My takeaways for future runs is that reducing heads and layers to 3 each doesn't affect model performance much but cuts ms/iter very dramatically. As someone running these on my laptop, this is a huge win that I will be incorporating into future runs. Additionally, reducing n_embd from 384 to 256 seems to help with overfitting, but it also slows convergence. I think a good compromise is to use n_embd = 300, which is what I will be using for future runs. However, I will increase max_iter to 2500 to allow the model more time to run until convergence. This is the exact same model as scenario 4 (besides the change in max_iter).
+My takeaways for future runs is that reducing heads and layers to 3 each doesn't affect model performance much but cuts ms/iter very dramatically. As someone running these on my laptop, this is a huge win that I will be incorporating into future runs. Additionally, reducing n_embd from 384 to 256 seems to help with overfitting, but it also slows convergence. I think a good compromise is to use n_embd = 300, which is what I will be using for future runs. You can refer to the bottom of this file to see raw results for scenario 4 with 2500 iterations. It got to convergence around 2400, so Ill be using 2400 max_iter in future runs to optimize for the best val loss and no useless iterating.
 
 I also want to caveat that none of my takeaways can really be absolute considering this wasn't a clean ablation experiment. I was testing multiple changes at once, so I can't say for sure which change is responsible for the results. However, this was a good first pass to get a general sense of what helps with overfitting and convergence speed.
+
 
 
 ## Raw results
@@ -415,4 +416,67 @@ CLIFK:
 First Watchman:
 
 KING EDWARD IVetch king:
+```
+
+**Scenario 3 with 2500 runs**
+```
+using MPS
+chars-per-token: train: 2.2338, val: 2.1062
+Parameters: 3,772,500 (3.77M)
+Training tokens: 40,960,000 (40.96M)
+Tokens/parameter: 10.86
+step 1: train loss 6.7490, val loss 6.7475, val bpb 4.6219, ms/iter 2311.22
+step 200: train loss 3.8715, val loss 3.9973, val bpb 2.7381, ms/iter 182.52
+step 400: train loss 3.6784, val loss 3.8503, val bpb 2.6374, ms/iter 172.52
+step 600: train loss 3.4843, val loss 3.7053, val bpb 2.5381, ms/iter 168.88
+step 800: train loss 3.2260, val loss 3.4801, val bpb 2.3838, ms/iter 168.89
+step 1000: train loss 3.0128, val loss 3.3401, val bpb 2.2879, ms/iter 168.60
+step 1200: train loss 2.8737, val loss 3.2544, val bpb 2.2292, ms/iter 168.56
+step 1400: train loss 2.7562, val loss 3.2075, val bpb 2.1971, ms/iter 169.82
+step 1600: train loss 2.6596, val loss 3.1861, val bpb 2.1824, ms/iter 168.42
+step 1800: train loss 2.5772, val loss 3.1682, val bpb 2.1702, ms/iter 168.30
+step 2000: train loss 2.5005, val loss 3.1626, val bpb 2.1664, ms/iter 168.38
+step 2200: train loss 2.4291, val loss 3.1623, val bpb 2.1661, ms/iter 168.15
+step 2400: train loss 2.3653, val loss 3.1492, val bpb 2.1571, ms/iter 168.38
+step 2500: train loss 2.3247, val loss 3.1566, val bpb 2.1622, ms/iter 168.36
+```
+
+![scenario 4 2500 iter loss curve](loss_curves/overfitting_s4_2500_iters.png)
+
+**Sample output:**
+
+```
+est thou soest thy kes; kiss where, king,
+Not fearing thy doom I shawed my shame.
+In thy deep soul to me, reazy,
+And that thy sweet dutinous word come to tide to thy mind;
+Long wrecking in thy creices shoud,
+Topplieve thy crowns are bound again.
+
+DUCHESS OF YORK:
+Should I tell my exterord! alas the wards of the hord!
+I'll fram thee in my foes,
+And sail thee weeds and are thy soverew
+Did they see
+To bear a thousand spring thee in to't?
+What, holy married. How like another?
+O, by the fault was secrute,
+Make not, durst not men:--moans me but: and
+To Buckingham
+It truth of that had showl and the words
+That want for anyrant house, seld what's bethens death;
+Here thrust this earth to dead, and his foot,
+For that fair beast, do answer's head
+More than he will sent for this war, but a fellow, as if he him with
+Show-bear'd; I say, knees, he'll bold, friar, nor safe seven run lord spased
+To prove his uringe assunate paulteen traitors,
+Not shall be subdues to time have evers me to a valus.
+I every wrong; and suppery well some city
+When your honour, good Capulet or with other pious territo.
+
+Second Ser:
+Sir, and let it.
+
+MISABELLA:
+Take him as you, but so, he
 ```

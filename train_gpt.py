@@ -3,12 +3,12 @@ import torch
 import time
 import math
 
-run_name = "overfitting_s5"
+run_name = "overfitting_s4_2500_iters"
 
 # hyperparameters
 batch_size = 64
 block_size = 256
-max_iters = 2000
+max_iters = 2400
 eval_interval = 200
 learning_rate = 3e-4
 eval_iters = 200
