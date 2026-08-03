@@ -1,41 +1,56 @@
 # my-gpt
-This repository began as a from-scratch implementation of a GPT-style decoder-only transformer. It has since evolved into a place to experiment with different architectural and training decisions. I'm implementing changes one at a time, running controlled ablation studies, and documenting both the results and the reasoning behind them.
+This repository began as a from-scratch implementation of a GPT-style decoder-only transformer. It has since evolved into an experimental playground for modern language models. I'm implementing architectural and training changes one at a time, running controlled ablation studies, and documenting both the results and the reasoning behind them.
 
 Data: `shakespeare.txt` (~1.1M chars). Model code lives in `my_gpt.py`; training entrypoint is `train_gpt.py`. BPE is under `BPE/`.
 
 ## Architecture
 
-Decoder-only transformer with causal self-attention, pre-norm residual blocks, and a final LM head. Hyperparameters (as used for the BPE ablation plan in `experimentation/BPE.md`):
+Decoder-only transformer with causal self-attention, pre-norm residual blocks, and a final LM head. Additional architectural updates have been made (e.g., RMSNorm, RoPE, SwiGLU), which are detailed in the Modifications section. These are the most up-to-date hyperparameters I'm using for my experiments:
 
 | Hyperparameter | Value |
 |---|---|
 | `batch_size` | 64 |
 | `block_size` | 256 |
-| `max_iters` | 2000 (ablation target; see Status) |
+| `max_iters` | 2400 |
 | `eval_interval` | 200 |
 | `learning_rate` | 3e-4 |
 | `eval_iters` | 200 |
-| `n_embd` | 384 |
-| `n_head` | 6 |
-| `n_layer` | 6 |
+| `n_embd` | 300 |
+| `n_head` | 3 |
+| `n_layer` | 3 |
 | `dropout` | 0.2 |
 
-Vocab size is 256 for the byte-level baseline, or `256 + num_merges` with BPE (500 merges → 756). This may change based on my experiments, but the ablation plan is to hold all hyperparameters constant except for merge count.
+Vocab size is 256 for the byte-level baseline, or `256 + num_merges` with BPE (500 merges → 756).
 
 
 Device: MPS if available, else CPU (`train_gpt.py`).
 
-## Updates
+## Experiments
 
-This started as replication of the Attention Is All You Need paper, guided by Andrej Karpathy's zero to hero course. Now, as I learn more, I'm updating the code along the way (and running small experiments sometimes). Here is a live list of updates:
+Each experiment is documented as a standalone write-up in `experimentation/`.
 
-- implemented BPE tokenizer and ran ablation comparing BPE vs UTF-8 byte-level baseline (see `01_experimentation/BPE.md`)
-- implemented bf16 automatic mixed precision in training using torch autocast and ran ablation comparing bf16 vs fp32 (see `02_experimentation/bf16.md`). not using this one for now, sticking to fp32 until I can run on CUDA with tensor cores.
-- switched to prenorm, applying layernorm out of residual stream, before attention and ffwd blocks (see `03_experimentation/prenorm.md`)
-- switched to RMSNorm & removed bias use from all linear layers (see `04_experimentation/RMSnorm.md`, now using torch.compile for RMSNorm layers to speed up training)
-- implemented SwiGLU and GELU activations in feedforward and ran ablation comparing ReLU, GELU, and SwiGLU (see `05_experimentation/activations.md`)
-- realized how horrendous my overfitting was and investigated causes (see `06_experimentation/overfitting.md`). ended up reducing number of layers and heads to 3 each, and reducing n_embd from 384 to 300 for future runs
-- implementing RoPE positional embeddings and ran ablation comparing RoPE vs absolute positional embeddings (see `07_experimentation/RoPE.md`)
+Every write-up contains:
+- Motivation
+- Hypothesis
+- Experimental setup
+- Results
+- Limitations
+- Follow-up questions
+
+## Modifications explored
+
+This started an implementation of the original transformer, guided by Andrej Karpathy's zero to hero course. As I learned more about modern innovations, I updated the code along the way and ran experiments to understand how they actually affect this model, test my hypotheses, and gain a strong intuition for why these innovations exist and are used. These are the modifications I explored, all of which you can find in the `experimentation/` folder:
+
+- **BPE tokenization:** implemented from-scratch BPE tokenizer for the shakespeare text. compared byte-level and BPE tokenization across multiple merge counts, evaluating convergence speed, bits-per-byte, and generation quality. (see `experimentation/01_BPE.md`)
+- **Mixed precision (bf16):** evaluated mixed precision using torch autocast on Apple MPS and investigated why its expected CUDA speedups did not appear on this hardware when compared to fp32 (see `experimentation/02_bf16.md`). not using this one for now, sticking to fp32 until I can run on CUDA with tensor cores.
+- **PreNorm:** compared PreNorm and PostNorm to investigate whether normalization placement affected optimization on a shallow transformer. applied layernorm out of residual stream, before attention and ffwd blocks (see `experimentation/03_prenorm.md`)
+- ** RMSNorm:** switched to RMSNorm & removed bias use from all linear layers. compared RMSNorm and LayerNorm (see `experimentation/04_RMSnorm.md`, now using torch.compile for RMSNorm layers to speed up training)
+- **Feedforward activations:** compared ReLU, GELU, and SwiGLU to study the tradeoff between expressiveness and overfitting. choosing SwiGLU for future runs (see `experimentation/05_activations.md`)
+- **Model scaling:** realized how horrendous my overfitting was and investigated causes by reducing model depth and width to better match the dataset (see `experimentation/06_overfitting.md`). ended up reducing number of layers and heads to 3 each, and reducing n_embd from 384 to 300 for future runs
+- **RoPE:** implemented RoPE and ran ablation comparing rotary and learned positional embeddings to study their impact on convergence and validation performance (see `experimentation/07_RoPE.md`)
+- **Weight decay:** tested a variety of different weight decays to use with AdamW optimizer to explore what would best address overfitting issues (see `experimentation/08_weight_decay.md`)
+
+I might implement gradient accumulation, activation checkpointing, and/or FlashAttention. Besides that, this repo is complete for now! I'm going to move onto different projects to explore beyond what this project can teach me. 
 
 
 ## How to run

@@ -96,7 +96,7 @@ class MultiHeadAttention(nn.Module):
         self.heads = nn.ModuleList([Head(head_size, n_embd, block_size, dropout, self.cos, self.sin) for _ in range(num_heads)])
         self.proj = nn.Linear(num_heads * head_size, n_embd, bias=False)
         self.dropout = nn.Dropout(dropout)
-        self.norm1 = (nn.RMSNorm(n_embd))
+        self.norm1 = nn.RMSNorm(n_embd)
     
     def forward(self, x):
         x_norm = self.norm1(x)
@@ -110,7 +110,7 @@ class FeedForward(nn.Module):
     def __init__(self, n_embd, dropout):
         super().__init__()
         self.net = nn.Sequential(
-            torch.compile(nn.RMSNorm(n_embd)),
+            nn.RMSNorm(n_embd),
             nn.Linear(n_embd, 4 * n_embd, bias=False),
             nn.ReLU(),
             nn.Linear(4 * n_embd, n_embd, bias=False),
@@ -125,7 +125,7 @@ class SwiGLUFeedForward(nn.Module):
 
     def __init__(self, n_embd, dropout):
         super().__init__()
-        self.norm = (nn.RMSNorm(n_embd))
+        self.norm = nn.RMSNorm(n_embd)
         hidden_size = int((8/3) * n_embd) # scaling by 2/3 to get same FLOPs as GELU
         self.w1 = nn.Linear(n_embd, hidden_size, bias=False)
         self.w2 = nn.Linear(n_embd, hidden_size, bias=False)
@@ -169,7 +169,7 @@ class GPTLanguageModel(nn.Module):
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd)
         # self.position_embedding_table = nn.Embedding(block_size, n_embd)
         self.blocks = nn.Sequential(*[Block(n_embd, n_head, block_size, dropout) for _ in range(n_layer)])
-        self.norm_f = (nn.RMSNorm(n_embd))
+        self.norm_f = nn.RMSNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size, bias=False)
         self.lossi = []
 

@@ -3,19 +3,20 @@ import torch
 import time
 import math
 
-run_name = "RoPE"
+run_name = "weightdecay_5"
 
 # hyperparameters
 batch_size = 64
 block_size = 256
-max_iters = 2400
+max_iters = 2000
 eval_interval = 200
 learning_rate = 3e-4
 eval_iters = 200
-n_embd = 300
+n_embd = 384
 n_head = 3
 n_layer = 3
 dropout = 0.2
+weight_decay = 1
 
 if torch.backends.mps.is_available():
     device = 'mps'
@@ -88,9 +89,8 @@ if USE_BPE:
 if PRINT_CPT:
     print(f"chars-per-token: train: {cpt_result['cpt_train']:.4f}, val: {cpt_result['cpt_val']:.4f}")
 
-model = GPTLanguageModel(n_head, n_embd, block_size, dropout, vocab_size, n_layer, device)
+model = GPTLanguageModel(n_head, n_embd, block_size, dropout, vocab_size, n_layer, device).to(device)
 model = torch.compile(model)
-m = model.to(device)
 
 
 if PRINT_CHINCHILLA_PARAMS:
@@ -105,7 +105,7 @@ if PRINT_CHINCHILLA_PARAMS:
     print(f"Tokens/parameter: {tokens / params:.2f}")
 
 # create a PyTorch optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
 iter_times = []
 losses_over_time = []
@@ -145,7 +145,7 @@ for iter in range(max_iters):
         else:
             print(f"step {iter + 1}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}, "
                 f"ms/iter {avg_iter_time*1000:.2f}")
-        if RUN_TO_CONVERGENCE:
+        if RUN_TO_CONVERGENCE: # can switch b/w train loss and val loss convergence
             if len(losses_over_time) >= 3:
                 last_three = [x[0] for x in losses_over_time[-3:]]
                 if max(last_three) - min(last_three) < 0.01:
@@ -154,9 +154,9 @@ for iter in range(max_iters):
 
 # saving loss curve
 if SAVE_LOSS_CURVE:
-    m.loss_curve(run_name)
+    model.loss_curve(run_name)
 
 
 # generate from the model
 context = torch.zeros((1, 1), dtype=torch.long, device=device)
-print(decode(m.generate(context, max_new_tokens=500)[0].tolist()))
+print(decode(model.generate(context, max_new_tokens=500)[0].tolist()))
