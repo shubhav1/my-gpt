@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>my-gpt UI</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">my-gpt</div>
+
+      <button id="new-model-btn" type="button" class="sidebar-new-btn">+ Train new model</button>
+      <button id="compare-btn" type="button" class="sidebar-new-btn">⇄ Compare models</button>
+
+      <div class="sidebar-section-label">Models</div>
+      <ul id="model-list" class="sidebar-list">
+        <li class="sidebar-empty muted">loading…</li>
+      </ul>
+    </aside>
+
+    <main class="main">
+      <section id="view-train" class="view">
+        <div class="view-head">
+          <h1>Train a new model</h1>
+          <p class="muted">Hyperparameters default to the ones at the top of train_gpt.py.</p>
+        </div>
+
+        <div class="train-layout">
+          <form id="train-form" class="card config-form">
+            <h2>Configuration</h2>
+
+            <label>Run name
+              <input type="text" name="run_name" required />
+            </label>
+
+            <div class="grid-2">
+              <label>Batch size <input type="number" name="batch_size" step="1" min="1" /></label>
+              <label>Block size <input type="number" name="block_size" step="1" min="1" /></label>
+              <label>Max iters <input type="number" name="max_iters" step="1" min="1" /></label>
+              <label>Eval interval <input type="number" name="eval_interval" step="1" min="1" /></label>
+              <label>Eval iters <input type="number" name="eval_iters" step="1" min="1" /></label>
+              <label>Learning rate <input type="number" name="learning_rate" step="any" min="0" /></label>
+              <label>n_embd <input type="number" name="n_embd" step="1" min="1" /></label>
+              <label>n_head <input type="number" name="n_head" step="1" min="1" /></label>
+              <label>n_layer <input type="number" name="n_layer" step="1" min="1" /></label>
+              <label>Dropout <input type="number" name="dropout" step="any" min="0" max="1" /></label>
+              <label>Weight decay <input type="number" name="weight_decay" step="any" min="0" /></label>
+            </div>
+
+            <div class="grid-2 checks">
+              <label class="checkbox"><input type="checkbox" name="use_bpe" /> Use BPE tokenizer</label>
+              <label class="checkbox"><input type="checkbox" name="use_bf16" /> Use bf16 autocast</label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" id="start-btn" class="btn btn-primary">Start training</button>
+              <button type="button" id="stop-btn" class="btn btn-ghost" disabled>Stop</button>
+            </div>
+            <p id="train-error" class="error-text"></p>
+          </form>
+
+          <div class="card stats-panel">
+            <h2>Live stats</h2>
+            <div class="stat-grid">
+              <div class="stat"><span class="stat-label">Status</span><span id="stat-status" class="stat-value">idle</span></div>
+              <div class="stat"><span class="stat-label">Device</span><span id="stat-device" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Iteration</span><span id="stat-iter" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Train loss</span><span id="stat-train-loss" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Val loss</span><span id="stat-val-loss" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Val bpb</span><span id="stat-bpb" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">ms/iter</span><span id="stat-ms" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Params</span><span id="stat-params" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Tokens/param</span><span id="stat-tpp" class="stat-value">—</span></div>
+            </div>
+
+            <div class="chart-wrap">
+              <canvas id="loss-chart"></canvas>
+              <div id="chart-loading" class="chart-loading">
+                <span class="spinner"></span>
+                <span>Loading dataset &amp; building model…</span>
+              </div>
+            </div>
+            <div class="legend">
+              <span><i class="dot dot-step"></i> train loss (per step)</span>
+              <span><i class="dot dot-val"></i> val loss (eval)</span>
+            </div>
+
+            <p class="hint">Checkpoints appear in the sidebar as they're produced — click one to inspect, chat with, or save it. Nothing here is kept unless you save it there.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-model" class="view" hidden>
+        <div class="view-head model-view-head">
+          <div>
+            <h1 id="model-title">—</h1>
+            <p id="model-subtitle" class="muted">—</p>
+          </div>
+          <div class="model-header-actions">
+            <button id="model-rename-btn" type="button" class="btn btn-ghost btn-small">Rename</button>
+            <button id="model-delete-btn" type="button" class="btn btn-ghost btn-small btn-danger">Delete model</button>
+          </div>
+        </div>
+        <p id="model-error" class="error-text"></p>
+
+        <div class="model-top-row">
+          <div class="card">
+            <h2>Iterations <span class="muted card-subhead">— up to 5 kept, worst val loss dropped first</span></h2>
+            <div id="iteration-picker" class="iteration-picker"></div>
+          </div>
+
+          <div class="card">
+            <div class="iteration-head">
+              <h2 id="iteration-title">Checkpoint</h2>
+              <button id="model-save-btn" type="button" class="btn btn-primary btn-small" hidden>Save this checkpoint</button>
+            </div>
+            <div class="stat-grid">
+              <div class="stat"><span class="stat-label">Iteration</span><span id="model-stat-iter" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Train loss</span><span id="model-stat-train-loss" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Val loss</span><span id="model-stat-val-loss" class="stat-value">—</span></div>
+              <div class="stat"><span class="stat-label">Val bpb</span><span id="model-stat-bpb" class="stat-value">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="model-layout">
+          <div class="model-side">
+            <div class="card">
+              <h2>Loss curve up to this iteration</h2>
+              <canvas id="model-loss-chart"></canvas>
+            </div>
+
+            <div class="card">
+              <h2>Architecture <span class="muted card-subhead">— identical across every iteration, since they're the same model</span></h2>
+              <dl id="model-arch" class="kv-list"></dl>
+            </div>
+          </div>
+
+          <div class="model-main">
+            <div class="card chat-window">
+              <h2 id="chat-heading">Chat</h2>
+              <div id="chat-messages" class="chat-messages">
+                <div class="chat-empty muted">Say something to this model.</div>
+              </div>
+              <form id="chat-form" class="chat-input-row">
+                <input type="text" id="chat-input" placeholder="Say something…" autocomplete="off" />
+                <label class="tokens-label">Max tokens
+                  <input type="number" id="chat-max-tokens" value="200" min="1" max="500" />
+                </label>
+                <button type="submit" class="btn btn-primary">Send</button>
+              </form>
+              <p id="chat-error" class="error-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-compare" class="view" hidden>
+        <div class="view-head">
+          <h1>Compare models</h1>
+          <p class="muted">Compares each model's final (highest-step) checkpoint — not an earlier one.</p>
+        </div>
+
+        <div class="card compare-picker-card">
+          <div class="compare-picker-row">
+            <label>Model A
+              <select id="compare-select-a"></select>
+            </label>
+            <label>Model B
+              <select id="compare-select-b"></select>
+            </label>
+          </div>
+          <p id="compare-error" class="error-text"></p>
+        </div>
+
+        <div id="compare-results" class="compare-results" hidden>
+          <div class="card">
+            <h2>Loss curves, overlaid</h2>
+            <div class="chart-wrap">
+              <canvas id="compare-chart"></canvas>
+            </div>
+            <div class="legend" id="compare-legend"></div>
+          </div>
+
+          <div class="card">
+            <h2>Stats</h2>
+            <div class="compare-table-wrap">
+              <table id="compare-table" class="compare-table"></table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
